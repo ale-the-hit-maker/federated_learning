@@ -1,9 +1,14 @@
 # federated_learning
+
+<br><br>
 Private repository where I store practical experiments for my Unibo internship on Federated Learning
 Each Federated Learning case was made by iterating 10 rounds of communication between the server model and 10 clients
 
+<br><br><br>
+
 ---
 
+<br><br><br>
 
 ### FED-LEARNING IID
 The first Federated Learning case is based on the MNIST Dataset and IID data distribution :
@@ -29,10 +34,11 @@ The first Federated Learning case is based on the MNIST Dataset and IID data dis
 </p>
 
 
-[log file](/src/IID_model.log)
+<br><br><br>
 
 ---
 
+<br><br><br>
 
 ### FED-LEARNING non-IID 5-CLS
 The second Federated Learning case is based on the MNIST Dataset and non-IID data distribution :
@@ -58,11 +64,12 @@ The second Federated Learning case is based on the MNIST Dataset and non-IID dat
   </code>
 </p>
 
-[log file](/src/nonIID5_model.log)
 
+<br><br><br>
 
 ---
 
+<br><br><br>
 
 ### FED-LEARNING non-IID 2-CLS
 The third Federated Learning case is based on the MNIST Dataset and non-IID data distribution :
@@ -88,17 +95,18 @@ The third Federated Learning case is based on the MNIST Dataset and non-IID data
   </code>
 </p>
 
-[log file](/src/nonIID2_model.log)
-
+<br><br><br>
 
 ---
 
+<br><br><br>
 
 ### PERFORMANCE-COMPARISON
 
 Here we will plot accuracy test results for each of the three experiments.
-As we can immediately see from the plot, when we use a non-IID data distribution among clients, the global model improves slowly and in a worse way than in the case of IID data distribution
+As we can immediately see from the plot, when we use a non-IID data distribution among clients, the global model improves slowly and in a worse way than in the case of an IID data distribution
 
+<br><br><br>
 
 ![img_not_found](/images/federated_accuracy.png)
 
