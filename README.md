@@ -97,7 +97,7 @@ The third Federated Learning case is based on the MNIST Dataset and non-IID data
 ### PERFORMANCE-COMPARISON
 
 Here we will plot accuracy test results for each of the three experiments.
-As we can immediately see from the plot, when we use a non-IID data distribution among clients, the global model improves slowly and in a worse way with respect to the case of IID data distribution
+As we can immediately see from the plot, when we use a non-IID data distribution among clients, the global model improves slowly and in a worse way than in the case of IID data distribution
 
 
 ![img_not_found](/images/federated_accuracy.png)
