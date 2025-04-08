@@ -1,4 +1,4 @@
-# Federated Learning with Mnist Dataset and IID data distribution
+# Federated Learning with Mnist Dataset and Non-IID data distribution
 
 import tensorflow as tf
 import numpy as np
@@ -14,6 +14,7 @@ import logging
 def normalize_img(image, label):
   """Normalizes images: `uint8` -> `float32`."""
   return tf.cast(image, tf.float32) / 255., label
+
 
 # Index shuffle
 indices = np.random.permutation(len(x_train))
@@ -36,13 +37,19 @@ ds_test = ds_test.cache()
 # TO KNOW : x_train is a numpy array, which in the MNIST case consists of a 3D tensor, made up of 60.000 images
 # of 28x28 pixels
 
-
 # configuration parameters
 num_rounds = 12
 num_clients = 10
+num_classes = 10
+num_classes_per_client = 2
+
+# dividing training example indices per classes
+class_indices = {i: np.where(y_train_shuffled == i)[0] for i in range(num_classes)}
+all_classes = np.arange(num_classes)
 clients_model = []
 split_size = len(x_train) // num_clients
-
+data_per_class = split_size // num_classes_per_client
+remaining_data = split_size - data_per_class*num_classes_per_client
 
 # 3] Creating client model --------------------------------------------------------------------------------------
 
@@ -50,6 +57,7 @@ split_size = len(x_train) // num_clients
 
 # We'll have two models used for decentralized training on clients and a server model where we
 # aggregate and average all parameters given by clients
+
 
 for cl in range(num_clients) :
 
@@ -84,7 +92,7 @@ server_model.compile(
 
 # log file configuration
 logging.basicConfig(
-    filename='IID_model.log',
+    filename='nonIID' + str(num_classes_per_client) + '_model.log',
     level=logging.INFO,
     format='%(asctime)s : global model performances update: %(message)s',
     filemode='w'
@@ -94,30 +102,62 @@ logging.basicConfig(
 
 for i in range(num_rounds):
 
-    for j in range(num_clients):
-        start = j * split_size
-        if j != num_clients - 1 :
-            end = (j + 1) * split_size
-        else :
-            end = len(x_train)
+    # Randomly choosing classes for each client, so that each client is assigned to different classes
+    chosen_classes = {k : [] for k in range(num_clients)}
+    # dict which contains each client's data
+    clients_data_x = {i: np.empty((0, 28, 28)) for i in range(num_clients)}
+    clients_data_y = {i: np.empty((0, 28, 28)) for i in range(num_clients)}
+    # array containing each client's dataset
+    clients_dataset = []
+
+    for client in range(num_clients):
+
+        # Overlapping classes random selection
+        chosen_classes[client] = np.random.choice(all_classes, num_classes_per_client, replace=False)
+
+        cl_data_x = []
+        cl_data_y = []
+
+        for j in range(num_classes_per_client):
+            if j == num_classes_per_client-1:
+                cls_indices = class_indices[chosen_classes[client][j]]
+                # Random subset of indices of the selected class
+                selected = np.random.choice(cls_indices, size=(data_per_class+remaining_data), replace=False)
+                for index in selected:
+                    cl_data_x.append(x_train_shuffled[index])
+                # Creating numpy array with labels for training
+                for _ in range(data_per_class + remaining_data) :
+                    cl_data_y.append(chosen_classes[client][j])
+            else :
+                cls_indices = class_indices[chosen_classes[client][j]]
+                # Random subset of indices of the selected class
+                selected = np.random.choice(cls_indices, size=data_per_class, replace=False)
+                for index in selected:
+                    cl_data_x.append(x_train_shuffled[index])
+                # Creating numpy array with labels for training
+                for _ in range(data_per_class) :
+                    cl_data_y.append(chosen_classes[client][j])
+
+        clients_data_x[client] = np.array(cl_data_x)
+        clients_data_y[client] = np.array(cl_data_y)
 
         # 5] Turning dataset into a tf.Dataset ------------------------------------------------------------------------
-        dataset = tf.data.Dataset.from_tensor_slices((x_train_shuffled[start:end], y_train_shuffled[start:end]))
+        clients_dataset.append(tf.data.Dataset.from_tensor_slices((clients_data_x[client], clients_data_y[client])))
 
         # changing data format
-        ds_train = dataset.map(
+        clients_dataset[client] = clients_dataset[client].map(
             normalize_img, num_parallel_calls=tf.data.AUTOTUNE)
 
         # caching data before shuffle on client
-        ds_train = ds_train.cache()
+        clients_dataset[client] = clients_dataset[client].cache()
 
         # 6] Shuffling dataset
-        ds_train = ds_train.shuffle(buffer_size=1000)
+        clients_dataset[client] = clients_dataset[client].shuffle(buffer_size=1000)
 
         # 7] creating batches -----------------------------------------------------------------------------------------
-        ds_train = ds_train.batch(64)
+        clients_dataset[client] = clients_dataset[client].batch(64)
         # prefetching data --> improve dataset's upload efficiency
-        ds_train = ds_train.prefetch(tf.data.AUTOTUNE)
+        clients_dataset[client] = clients_dataset[client].prefetch(tf.data.AUTOTUNE)
 
     # 8] Iterating more training round ----------------------------------------------------------------------------
 
@@ -126,11 +166,11 @@ for i in range(num_rounds):
 
         # Setting current global model weights to clients' model
         server_weights = server_model.get_weights()
-        clients_model[j].set_weights(server_weights)
+        clients_model[client].set_weights(server_weights)
 
         # training and testing the model
-        clients_model[j].fit(
-            ds_train,
+        clients_model[client].fit(
+            clients_dataset[client],
             epochs=1,
         )
 
@@ -142,8 +182,6 @@ for i in range(num_rounds):
     for client in range(num_clients):
         client_weights = clients_model[client].get_weights()
         client_weights_list.append(client_weights)
-
-
 
     # 10] Averaging and setting parameters on server model -------------------------------------------------------
 
@@ -161,7 +199,6 @@ for i in range(num_rounds):
 
     # Setting weights on global model
     server_model.set_weights(aggregated_weights)
-
 
     # 11] Logging model performances round after round -----------------------------------------------------------
 
