@@ -1,0 +1,89 @@
+{
+    "comment": "draft configuration with design derived from CDMKit - adapted for PostgreSQL",
+
+    "variables":
+    {
+        "@source_database":   "mimiciv",
+        "@core_schema":       "mimiciv_hosp",
+        "@hosp_schema":       "mimiciv_hosp",
+        "@icu_schema":        "mimiciv_icu",
+
+        "@voc_database":      "mimiciv",
+        "@voc_schema":        "omop_cdm",
+
+        "@wf_database":       "mimiciv",
+        "@wf_schema":         "waveform_source",
+
+        "@etl_database":      "mimiciv",
+        "@etl_schema":        "mimiciv_cdm",
+
+        "@metrics_database":  "mimiciv",
+        "@metrics_schema":    "cdm_metrics",
+
+        "@atlas_database":    "mimiciv",
+        "@atlas_schema":      "cdm_atlas",
+
+        "@waveforms_csv_path": "D:/USERDATA/Documents/GitHub/MIMIC/waveforms/csv",
+
+        "@pg_host":           "localhost",
+        "@pg_port":           "5432",
+        "@pg_user":           "postgres",
+        "@pg_password":       "Aleinnet29Linux",
+        "@pg_database":       "mimiciv",
+        "@connection_timeout": "30"
+    },
+
+    "workflows":
+    [
+        {
+            "workflow": "ddl",
+            "comment": "use the same schema templates as in etl section",
+            "type": "sql",
+            "conf": "workflow_ddl.conf"
+        },
+
+        {
+            "workflow": "staging",
+            "comment": "from the raw source tables to src_*, and from voc schema to work schema",
+            "type": "sql",
+            "conf": "workflow_staging.conf"
+        },
+
+        {
+            "workflow": "etl",
+            "type": "sql",
+            "conf": "workflow_etl.conf"
+        },
+
+        {
+            "workflow": "vocabulary_refresh",
+            "type": "py",
+            "conf": "workflow_vocabulary_refresh.conf"
+        },
+
+        {
+            "workflow": "ut",
+            "type": "sql",
+            "conf": "workflow_ut.conf"
+        },
+
+        {
+            "workflow": "qa",
+            "type": "sql",
+            "conf": "workflow_qa.conf"
+        },
+
+        {
+            "workflow": "metrics",
+            "comment": "build metrics with metrics_gen scripts",
+            "type": "sql",
+            "conf": "workflow_metrics.conf"
+        },
+        {
+            "workflow": "gen_scripts",
+            "comment": "automation to generate similar queries for some tasks",
+            "type": "py",
+            "conf": "workflow_gen_scripts.conf"
+        }
+    ]
+}
