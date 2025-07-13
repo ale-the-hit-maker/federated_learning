@@ -108,6 +108,6 @@ As we can immediately see from the plot, when we use a non-IID data distribution
 
 <br><br><br>
 
-![img_not_found](/images/federated_accuracy.png)
+![img_not_found](/myfirstneuralnetwork/images/federated_accuracy.png)
 
 
